@@ -14,13 +14,17 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Inicializar conectores sin caché para GA4
 @st.cache_resource
-def init_connectors():
-    gsc = GSCConnector()
-    ga4 = GA4Connector()
-    return gsc, ga4
+def init_gsc():
+    return GSCConnector()
 
-gsc_connector, ga4_connector = init_connectors()
+# GA4 sin caché para asegurar que use el property ID hardcodeado
+def init_ga4():
+    return GA4Connector()
+
+gsc_connector = init_gsc()
+ga4_connector = init_ga4()
 
 st.title("📊 Dashboard SEO - Flokzu")
 st.markdown("---")
@@ -116,6 +120,7 @@ with st.sidebar:
     
     if st.button("🔄 Actualizar Datos", type="primary", use_container_width=True):
         st.cache_data.clear()
+        st.cache_resource.clear()
         st.rerun()
 
 tabs = st.tabs(["📊 Overview", "🔍 Search Console", "📈 Analytics", "🎯 Keywords", "📄 Páginas"])
