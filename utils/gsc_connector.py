@@ -8,6 +8,7 @@ import streamlit as st
 from typing import Optional, Dict, List, Any
 import json
 import tempfile
+import base64
 
 class GSCConnector:
     def __init__(self, property_url: str = None, credentials_path: str = None):
@@ -24,8 +25,25 @@ class GSCConnector:
     def _initialize_service(self):
         try:
             # Intentar usar las credenciales de Streamlit Secrets primero
-            if "gsc_service_account" in st.secrets:
+            if "GSC_SERVICE_ACCOUNT_BASE64" in st.secrets:
+                # Decodificar Base64
+                creds_json = base64.b64decode(st.secrets["GSC_SERVICE_ACCOUNT_BASE64"]).decode()
+                creds_dict = json.loads(creds_json)
+                
                 # Crear archivo temporal con las credenciales
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+                    json.dump(creds_dict, f)
+                    temp_path = f.name
+                
+                credentials = service_account.Credentials.from_service_account_file(
+                    temp_path,
+                    scopes=['https://www.googleapis.com/auth/webmasters.readonly']
+                )
+                # Eliminar archivo temporal
+                os.unlink(temp_path)
+            
+            elif "gsc_service_account" in st.secrets:
+                # Fallback al método anterior
                 with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
                     json.dump(dict(st.secrets["gsc_service_account"]), f)
                     temp_path = f.name
@@ -34,7 +52,6 @@ class GSCConnector:
                     temp_path,
                     scopes=['https://www.googleapis.com/auth/webmasters.readonly']
                 )
-                # Eliminar archivo temporal
                 os.unlink(temp_path)
                 
             elif self.credentials_path and os.path.exists(self.credentials_path):

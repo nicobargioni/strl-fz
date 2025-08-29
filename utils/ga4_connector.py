@@ -15,14 +15,12 @@ import streamlit as st
 from typing import Optional, Dict, List, Any
 import json
 import tempfile
+import base64
 
 class GA4Connector:
     def __init__(self, property_id: str = None, credentials_path: str = None):
-        # Prioridad: parámetro > secrets > env
-        try:
-            self.property_id = property_id or st.secrets["GA4_PROPERTY_ID"]
-        except:
-            self.property_id = property_id or os.getenv('GA4_PROPERTY_ID')
+        # Hardcoded property ID
+        self.property_id = "300886887"
         
         self.credentials_path = credentials_path or os.getenv('GA4_SERVICE_ACCOUNT_FILE')
         self.client = None
@@ -31,8 +29,25 @@ class GA4Connector:
     def _initialize_client(self):
         try:
             # Intentar usar las credenciales de Streamlit Secrets primero
-            if "ga4_service_account" in st.secrets:
+            if "GA4_SERVICE_ACCOUNT_BASE64" in st.secrets:
+                # Decodificar Base64
+                creds_json = base64.b64decode(st.secrets["GA4_SERVICE_ACCOUNT_BASE64"]).decode()
+                creds_dict = json.loads(creds_json)
+                
                 # Crear archivo temporal con las credenciales
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+                    json.dump(creds_dict, f)
+                    temp_path = f.name
+                
+                credentials = service_account.Credentials.from_service_account_file(
+                    temp_path,
+                    scopes=['https://www.googleapis.com/auth/analytics.readonly']
+                )
+                # Eliminar archivo temporal
+                os.unlink(temp_path)
+            
+            elif "ga4_service_account" in st.secrets:
+                # Fallback al método anterior
                 with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
                     json.dump(dict(st.secrets["ga4_service_account"]), f)
                     temp_path = f.name
@@ -41,7 +56,6 @@ class GA4Connector:
                     temp_path,
                     scopes=['https://www.googleapis.com/auth/analytics.readonly']
                 )
-                # Eliminar archivo temporal
                 os.unlink(temp_path)
                 
             elif self.credentials_path and os.path.exists(self.credentials_path):
