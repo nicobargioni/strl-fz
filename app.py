@@ -110,10 +110,7 @@ with st.sidebar:
         st.caption(f"Property ID: {ga4_connector.property_id}")
     else:
         st.error("❌ GA4 no conectado")
-        if not ga4_connector.property_id:
-            st.info("❌ GA4_PROPERTY_ID no configurado en Streamlit Secrets")
-        else:
-            st.info("❌ Configurar credenciales GA4 en Streamlit Secrets")
+        st.info("❌ Configurar credenciales GA4 en Streamlit Secrets")
     
     st.markdown("---")
     

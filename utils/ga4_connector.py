@@ -64,8 +64,6 @@ class GA4Connector:
                     scopes=['https://www.googleapis.com/auth/analytics.readonly']
                 )
             else:
-                if not self.property_id:
-                    st.error("GA4_PROPERTY_ID no está configurado")
                 return False
             
             self.client = BetaAnalyticsDataClient(credentials=credentials)
