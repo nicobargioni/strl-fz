@@ -70,12 +70,6 @@ class GA4Connector:
             
             self.client = BetaAnalyticsDataClient(credentials=credentials)
             
-            # Verificar que property_id existe
-            if not self.property_id:
-                st.error(f"GA4_PROPERTY_ID no está configurado. Valor actual: {self.property_id}")
-                st.error(f"Secrets disponibles: {list(st.secrets.keys()) if st.secrets else 'No secrets'}")
-                return False
-            
             return True
             
         except Exception as e:
