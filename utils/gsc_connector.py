@@ -12,7 +12,11 @@ import tempfile
 class GSCConnector:
     def __init__(self, property_url: str = None, credentials_path: str = None):
         # Prioridad: parámetro > secrets > env
-        self.property_url = property_url or st.secrets.get("GSC_PROPERTY_URL", os.getenv('GSC_PROPERTY_URL'))
+        try:
+            self.property_url = property_url or st.secrets["GSC_PROPERTY_URL"]
+        except:
+            self.property_url = property_url or os.getenv('GSC_PROPERTY_URL')
+        
         self.credentials_path = credentials_path or os.getenv('GSC_SERVICE_ACCOUNT_FILE')
         self.service = None
         self._initialize_service()

@@ -19,7 +19,11 @@ import tempfile
 class GA4Connector:
     def __init__(self, property_id: str = None, credentials_path: str = None):
         # Prioridad: parámetro > secrets > env
-        self.property_id = property_id or st.secrets.get("GA4_PROPERTY_ID", os.getenv('GA4_PROPERTY_ID'))
+        try:
+            self.property_id = property_id or st.secrets["GA4_PROPERTY_ID"]
+        except:
+            self.property_id = property_id or os.getenv('GA4_PROPERTY_ID')
+        
         self.credentials_path = credentials_path or os.getenv('GA4_SERVICE_ACCOUNT_FILE')
         self.client = None
         self._initialize_client()
@@ -54,7 +58,8 @@ class GA4Connector:
             
             # Verificar que property_id existe
             if not self.property_id:
-                st.error("GA4_PROPERTY_ID no está configurado")
+                st.error(f"GA4_PROPERTY_ID no está configurado. Valor actual: {self.property_id}")
+                st.error(f"Secrets disponibles: {list(st.secrets.keys()) if st.secrets else 'No secrets'}")
                 return False
             
             return True
