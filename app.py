@@ -3,12 +3,9 @@ import pandas as pd
 from datetime import datetime, timedelta
 import plotly.express as px
 import plotly.graph_objects as go
-from dotenv import load_dotenv
 import os
 
 from utils import GSCConnector, GA4Connector
-
-load_dotenv()
 
 st.set_page_config(
     page_title="Dashboard SEO - Flokzu",
@@ -106,7 +103,7 @@ with st.sidebar:
         st.success("✅ Google Search Console conectado")
     else:
         st.error("❌ GSC no conectado")
-        st.info("Configura GSC_SERVICE_ACCOUNT_FILE en .env")
+        st.info("Configura las credenciales en Streamlit Secrets")
     
     if ga4_connector.client and ga4_connector.property_id:
         st.success("✅ Google Analytics 4 conectado")
@@ -114,9 +111,9 @@ with st.sidebar:
     else:
         st.error("❌ GA4 no conectado")
         if not ga4_connector.property_id:
-            st.info("❌ GA4_PROPERTY_ID no configurado en .env")
+            st.info("❌ GA4_PROPERTY_ID no configurado en Streamlit Secrets")
         else:
-            st.info("❌ Configurar GA4_SERVICE_ACCOUNT_FILE en .env")
+            st.info("❌ Configurar credenciales GA4 en Streamlit Secrets")
     
     st.markdown("---")
     
@@ -466,12 +463,21 @@ with tabs[2]:
             organic_data = ga4_connector.get_organic_traffic(date_format_start, date_format_end)
             
             if not organic_data.empty:
+                # Ordenar por fecha para evitar líneas cruzadas
+                organic_data = organic_data.sort_values('date')
+                
                 fig = px.line(
                     organic_data,
                     x='date',
                     y='sessions',
                     title='Sesiones de Tráfico Orgánico',
-                    labels={'sessions': 'Sesiones', 'date': 'Fecha'}
+                    labels={'sessions': 'Sesiones', 'date': 'Fecha'},
+                    markers=True
+                )
+                fig.update_traces(line=dict(width=2))
+                fig.update_layout(
+                    xaxis_tickformat='%d %b',
+                    hovermode='x unified'
                 )
                 st.plotly_chart(fig, use_container_width=True)
         

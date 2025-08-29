@@ -7,23 +7,43 @@ from googleapiclient.errors import HttpError
 import streamlit as st
 from typing import Optional, Dict, List, Any
 import json
+import tempfile
 
 class GSCConnector:
     def __init__(self, property_url: str = None, credentials_path: str = None):
-        self.property_url = property_url or os.getenv('GSC_PROPERTY_URL')
+        # Prioridad: parámetro > secrets > env
+        self.property_url = property_url or st.secrets.get("GSC_PROPERTY_URL", os.getenv('GSC_PROPERTY_URL'))
         self.credentials_path = credentials_path or os.getenv('GSC_SERVICE_ACCOUNT_FILE')
         self.service = None
         self._initialize_service()
     
     def _initialize_service(self):
         try:
-            if self.credentials_path and os.path.exists(self.credentials_path):
+            # Intentar usar las credenciales de Streamlit Secrets primero
+            if "gsc_service_account" in st.secrets:
+                # Crear archivo temporal con las credenciales
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+                    json.dump(dict(st.secrets["gsc_service_account"]), f)
+                    temp_path = f.name
+                
+                credentials = service_account.Credentials.from_service_account_file(
+                    temp_path,
+                    scopes=['https://www.googleapis.com/auth/webmasters.readonly']
+                )
+                # Eliminar archivo temporal
+                os.unlink(temp_path)
+                
+            elif self.credentials_path and os.path.exists(self.credentials_path):
                 credentials = service_account.Credentials.from_service_account_file(
                     self.credentials_path,
                     scopes=['https://www.googleapis.com/auth/webmasters.readonly']
                 )
-                self.service = build('searchconsole', 'v1', credentials=credentials)
-                return True
+            else:
+                return False
+            
+            self.service = build('searchconsole', 'v1', credentials=credentials)
+            return True
+            
         except Exception as e:
             st.error(f"Error al inicializar GSC: {str(e)}")
             return False

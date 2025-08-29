@@ -13,29 +13,52 @@ from google.analytics.data_v1beta.types import (
 from google.oauth2 import service_account
 import streamlit as st
 from typing import Optional, Dict, List, Any
+import json
+import tempfile
 
 class GA4Connector:
     def __init__(self, property_id: str = None, credentials_path: str = None):
-        self.property_id = property_id or os.getenv('GA4_PROPERTY_ID')
+        # Prioridad: parámetro > secrets > env
+        self.property_id = property_id or st.secrets.get("GA4_PROPERTY_ID", os.getenv('GA4_PROPERTY_ID'))
         self.credentials_path = credentials_path or os.getenv('GA4_SERVICE_ACCOUNT_FILE')
         self.client = None
         self._initialize_client()
     
     def _initialize_client(self):
         try:
-            if self.credentials_path and os.path.exists(self.credentials_path):
+            # Intentar usar las credenciales de Streamlit Secrets primero
+            if "ga4_service_account" in st.secrets:
+                # Crear archivo temporal con las credenciales
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+                    json.dump(dict(st.secrets["ga4_service_account"]), f)
+                    temp_path = f.name
+                
+                credentials = service_account.Credentials.from_service_account_file(
+                    temp_path,
+                    scopes=['https://www.googleapis.com/auth/analytics.readonly']
+                )
+                # Eliminar archivo temporal
+                os.unlink(temp_path)
+                
+            elif self.credentials_path and os.path.exists(self.credentials_path):
                 credentials = service_account.Credentials.from_service_account_file(
                     self.credentials_path,
                     scopes=['https://www.googleapis.com/auth/analytics.readonly']
                 )
-                self.client = BetaAnalyticsDataClient(credentials=credentials)
-                
-                # Verificar que property_id existe
+            else:
                 if not self.property_id:
-                    st.error("GA4_PROPERTY_ID no está configurado en .env")
-                    return False
-                
-                return True
+                    st.error("GA4_PROPERTY_ID no está configurado")
+                return False
+            
+            self.client = BetaAnalyticsDataClient(credentials=credentials)
+            
+            # Verificar que property_id existe
+            if not self.property_id:
+                st.error("GA4_PROPERTY_ID no está configurado")
+                return False
+            
+            return True
+            
         except Exception as e:
             st.error(f"Error al inicializar GA4: {str(e)}")
             return False

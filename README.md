@@ -68,17 +68,9 @@ streamlit_flokzu/
     └── ga4_connector.py  # Conector para Google Analytics 4
 ```
 
-## Variables de Entorno
+## Configuración con Streamlit Secrets
 
-```env
-# Google Search Console
-GSC_PROPERTY_URL=https://www.flokzu.com
-GSC_SERVICE_ACCOUNT_FILE=path/to/service-account-key.json
-
-# Google Analytics 4
-GA4_PROPERTY_ID=your-property-id
-GA4_SERVICE_ACCOUNT_FILE=path/to/ga4-service-account-key.json
-```
+Para usar la aplicación con Streamlit Cloud, configura los secrets en el dashboard de Streamlit o crea un archivo `.streamlit/secrets.toml` localmente.
 
 ## Funcionalidades Principales
 
